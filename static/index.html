@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quantum Maze Solver — Grover's Algorithm Live Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B0E1A;
+    --panel: #141830;
+    --panel-2: #1B2044;
+    --border: #262B4A;
+    --text: #E7E9F5;
+    --text-muted: #8B90AC;
+    --violet: #7C83FD;
+    --violet-dim: #4A4FA0;
+    --gold: #F2B705;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    padding: 2rem 1.5rem 4rem;
+  }
+  h1, h2, h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    margin: 0;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+
+  .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .top h1 { font-size: 26px; letter-spacing: -0.01em; }
+  .top .tag { color: var(--text-muted); font-size: 13px; }
+  .subhead { color: var(--text-muted); font-size: 14px; max-width: 640px; line-height: 1.6; margin: 0.75rem 0 1.75rem; }
+
+  .hero {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+  }
+  @media (max-width: 760px) { .hero { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+
+  #maze-canvas { display: block; width: 100%; height: auto; background: var(--panel-2); border-radius: 8px; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem; }
+  select, button {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 0.85rem;
+    cursor: pointer;
+  }
+  button.primary { background: var(--violet); color: #0B0E1A; font-weight: 600; border: none; }
+  button.primary:hover { background: #8D93FF; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button:not(.primary):hover { border-color: var(--violet); }
+
+  .stepline { font-size: 13px; color: var(--gold); margin-top: 1rem; min-height: 18px; }
+
+  .info-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1rem; font-size: 13px; margin-top: 1rem; }
+  .info-rows div span { color: var(--text-muted); }
+
+  .round-label { font-size: 13px; color: var(--text-muted); margin-bottom: 0.5rem; }
+  .prob-bar-track { background: var(--panel-2); border-radius: 6px; height: 28px; overflow: hidden; position: relative; }
+  .prob-bar-fill { height: 100%; background: linear-gradient(90deg, var(--violet-dim), var(--gold)); width: 1.5%; transition: width 0.5s ease; }
+  .prob-bar-label { position: absolute; top: 0; left: 0; height: 100%; display: flex; align-items: center; padding-left: 10px; font-size: 13px; font-weight: 600; }
+
+  .hist { margin-top: 1.5rem; }
+  .hist-row { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 4px; }
+  .hist-bits { width: 76px; color: var(--text-muted); flex-shrink: 0; }
+  .hist-track { flex: 1; background: var(--panel-2); border-radius: 4px; height: 16px; overflow: hidden; }
+  .hist-fill { height: 100%; background: var(--violet); transition: width 0.4s ease; }
+  .hist-fill.marked { background: var(--gold); }
+  .hist-pct { width: 54px; text-align: right; color: var(--text-muted); flex-shrink: 0; }
+
+  .results { margin-top: 1.5rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+  @media (max-width: 760px) { .results { grid-template-columns: 1fr 1fr; } }
+  .stat { background: var(--panel-2); border-radius: 8px; padding: 0.85rem 1rem; }
+  .stat .label { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+  .stat .value { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 600; }
+  .stat.gold .value { color: var(--gold); }
+
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); margin-top: 0.5rem; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #3B9E5F; flex-shrink: 0; }
+  .dot.err { background: #D9534F; }
+  .dot.wait { background: var(--gold); }
+
+  .footnote { color: var(--text-muted); font-size: 12px; margin-top: 2rem; line-height: 1.7; }
+  .footnote code { color: var(--violet); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <h1>Quantum maze solver</h1>
+    <span class="tag">Real Qiskit circuits, run server-side on every request</span>
+  </div>
+  <p class="subhead">
+    Classical search checks maze cells one at a time — on average N/2 tries to find the exit.
+    Grover's algorithm searches the same unsorted space in roughly √N steps.
+    This page calls a Flask backend that builds and runs an actual Qiskit circuit
+    on Aer's simulator for every maze you generate.
+  </p>
+
+  <div class="hero">
+    <div class="panel">
+      <canvas id="maze-canvas" width="480" height="480"></canvas>
+      <div class="controls">
+        <select id="size-select">
+          <option value="4">4×4 maze</option>
+          <option value="8" selected>8×8 maze</option>
+          <option value="16">16×16 maze</option>
+        </select>
+        <button id="new-maze-btn">New maze</button>
+      </div>
+      <div class="info-rows">
+        <div><span>Search space</span><br>N = <b id="info-n">–</b> cells</div>
+        <div><span>Qubits required</span><br><b id="info-qubits">–</b></div>
+        <div><span>Shortest path</span><br><b id="info-path">–</b> cells (classical BFS)</div>
+        <div><span>Grover iterations</span><br><b id="info-iters">–</b> (optimal)</div>
+      </div>
+      <div class="badge"><span class="dot" id="status-dot"></span><span id="status-text">Connected to backend</span></div>
+    </div>
+
+    <div class="panel">
+      <h3 style="font-size:15px;">Amplitude amplification</h3>
+      <div class="stepline" id="stepline">Press play to run Grover's algorithm on the server.</div>
+
+      <div class="controls">
+        <button id="play-btn" class="primary">Play</button>
+        <button id="reset-btn">Reset</button>
+      </div>
+
+      <div class="round-label" id="round-label">Waiting to run —</div>
+      <div class="prob-bar-track">
+        <div class="prob-bar-fill" id="prob-bar-fill"></div>
+        <div class="prob-bar-label" id="prob-bar-label">—</div>
+      </div>
+
+      <div class="hist" id="hist"></div>
+    </div>
+  </div>
+
+  <div class="results" id="results" style="display:none;">
+    <div class="stat gold"><div class="label">P(exit) — quantum (real Qiskit)</div><div class="value" id="stat-quantum">–</div></div>
+    <div class="stat"><div class="label">Random-guess baseline</div><div class="value" id="stat-classical">–</div></div>
+    <div class="stat gold"><div class="label">Amplification factor</div><div class="value" id="stat-factor">–</div></div>
+  </div>
+
+  <p class="footnote">
+    Architecture: this page (static HTML/JS) calls <code>GET /api/maze</code> and <code>GET /api/grover</code>
+    on a Flask backend. The backend builds a Grover oracle + diffuser in Qiskit, runs it on the Aer simulator,
+    and returns the measurement counts as JSON — the quantum computation itself never touches the browser.
+  </p>
+</div>
+
+<script>
+const API_BASE = '';
+
+function keyFn(a, b) {
+  const s = [a.join(','), b.join(',')].sort();
+  return s[0] + '|' + s[1];
+}
+
+function drawMaze(mazeData) {
+  const canvas = document.getElementById('maze-canvas');
+  const ctx = canvas.getContext('2d');
+  const size = mazeData.size;
+  const start = mazeData.start, exit_ = mazeData.exit;
+  const openEdges = new Set();
+  for (const e of mazeData.edges) if (e.open) openEdges.add(keyFn(e.a, e.b));
+
+  const W = canvas.width, cell = W / size;
+  ctx.clearRect(0, 0, W, W);
+  ctx.fillStyle = '#1B2044';
+  ctx.fillRect(0, 0, W, W);
+
+  const pathSet = new Set((mazeData.path || []).map(p => p.join(',')));
+  ctx.fillStyle = 'rgba(124,131,253,0.14)';
+  for (const k of pathSet) {
+    const [r,c] = k.split(',').map(Number);
+    ctx.fillRect(c*cell, r*cell, cell, cell);
+  }
+
+  ctx.strokeStyle = '#262B4A';
+  ctx.lineWidth = Math.max(2, cell * 0.06);
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      const x = c*cell, y = r*cell;
+      if (c+1 < size && !openEdges.has(keyFn([r,c],[r,c+1]))) {
+        ctx.beginPath(); ctx.moveTo(x+cell, y); ctx.lineTo(x+cell, y+cell); ctx.stroke();
+      }
+      if (r+1 < size && !openEdges.has(keyFn([r,c],[r+1,c]))) {
+        ctx.beginPath(); ctx.moveTo(x, y+cell); ctx.lineTo(x+cell, y+cell); ctx.stroke();
+      }
+    }
+  }
+  ctx.strokeRect(1, 1, W-2, W-2);
+
+  function marker(pos, color, label) {
+    const cx = pos[1]*cell + cell/2, cy = pos[0]*cell + cell/2;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.max(6, cell*0.28), 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#0B0E1A';
+    ctx.font = `600 ${Math.max(10, cell*0.28)}px "Space Grotesk", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, cx, cy + 1);
+  }
+  marker(start, '#7C83FD', 'S');
+  marker(exit_, '#F2B705', 'E');
+}
+
+let state = { seed: 42, size: 8, playing: false, timer: null, grover: null };
+
+function setStatus(mode, text) {
+  document.getElementById('status-dot').className = 'dot' + (mode === 'ok' ? '' : mode === 'wait' ? ' wait' : ' err');
+  document.getElementById('status-text').textContent = text;
+}
+
+async function loadMaze() {
+  setStatus('wait', 'Generating maze...');
+  const size = parseInt(document.getElementById('size-select').value, 10);
+  state.size = size;
+  state.seed = Math.floor(Math.random() * 1e9);
+  const res = await fetch(`${API_BASE}/api/maze?size=${size}&seed=${state.seed}`);
+  if (!res.ok) { setStatus('err', 'Backend error loading maze'); return; }
+  const data = await res.json();
+  drawMaze(data);
+  document.getElementById('info-n').textContent = Math.pow(2, data.qubits);
+  document.getElementById('info-qubits').textContent = data.qubits;
+  document.getElementById('info-path').textContent = data.path ? data.path.length : '—';
+  document.getElementById('info-iters').textContent = Math.max(1, Math.floor((Math.PI/4) * Math.sqrt(Math.pow(2, data.qubits))));
+  setStatus('ok', 'Connected to backend');
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('stepline').textContent = "Press play to run Grover's algorithm on the server.";
+  document.getElementById('round-label').textContent = 'Waiting to run —';
+  document.getElementById('prob-bar-fill').style.width = '1.5%';
+  document.getElementById('prob-bar-label').textContent = '—';
+  document.getElementById('hist').innerHTML = '';
+  state.grover = null;
+}
+
+async function runGrover() {
+  setStatus('wait', 'Running Qiskit circuit on server...');
+  document.getElementById('stepline').textContent = 'Contacting backend — building oracle, diffuser, running Aer simulator...';
+  document.getElementById('play-btn').disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/api/grover?size=${state.size}&seed=${state.seed}&shots=2048`);
+    if (!res.ok) { setStatus('err', 'Backend error running Grover search'); document.getElementById('play-btn').disabled = false; return; }
+    const data = await res.json();
+    state.grover = data;
+    setStatus('ok', 'Connected to backend');
+    animateProgression(data);
+  } catch (e) {
+    setStatus('err', 'Could not reach backend');
+    document.getElementById('play-btn').disabled = false;
+  }
+}
+
+function animateProgression(data) {
+  let i = 0;
+  const prog = data.progression;
+  document.getElementById('play-btn').textContent = 'Running...';
+  state.timer = setInterval(() => {
+    const { round, prob } = prog[i];
+    document.getElementById('round-label').textContent = `Round ${round} of ${data.iterations} — probability of measuring the exit`;
+    document.getElementById('prob-bar-fill').style.width = Math.max(1.5, prob) + '%';
+    document.getElementById('prob-bar-label').textContent = prob.toFixed(2) + '%';
+    document.getElementById('stepline').textContent = round === 0
+      ? 'Uniform superposition over every maze cell — no information yet.'
+      : (round >= data.iterations ? `Done — ${data.iterations} real Qiskit rounds complete.` : 'Amplifying...');
+    i++;
+    if (i >= prog.length) {
+      clearInterval(state.timer);
+      showFinal(data);
+      document.getElementById('play-btn').disabled = false;
+      document.getElementById('play-btn').textContent = 'Play again';
+    }
+  }, 500);
+}
+
+function showFinal(data) {
+  const hist = document.getElementById('hist');
+  hist.innerHTML = '';
+  const maxP = Math.max(...data.top_states.map(s => s.prob));
+  for (const s of data.top_states) {
+    const marked = s.bits === data.exit_bits;
+    const row = document.createElement('div');
+    row.className = 'hist-row';
+    row.innerHTML = `
+      <div class="hist-bits">${s.bits}</div>
+      <div class="hist-track"><div class="hist-fill${marked ? ' marked' : ''}" style="width:${Math.max(2,(s.prob/maxP)*100)}%"></div></div>
+      <div class="hist-pct">${s.prob.toFixed(2)}%</div>
+    `;
+    hist.appendChild(row);
+  }
+  document.getElementById('results').style.display = 'grid';
+  document.getElementById('stat-quantum').textContent = data.final_prob.toFixed(2) + '%';
+  document.getElementById('stat-classical').textContent = data.classical_baseline.toFixed(2) + '%';
+  document.getElementById('stat-factor').textContent = data.amplification.toFixed(1) + 'x';
+}
+
+document.getElementById('play-btn').addEventListener('click', () => {
+  if (state.timer) clearInterval(state.timer);
+  runGrover();
+});
+document.getElementById('reset-btn').addEventListener('click', () => { if (state.timer) clearInterval(state.timer); loadMaze(); });
+document.getElementById('new-maze-btn').addEventListener('click', () => { if (state.timer) clearInterval(state.timer); loadMaze(); });
+document.getElementById('size-select').addEventListener('change', () => { if (state.timer) clearInterval(state.timer); loadMaze(); });
+
+loadMaze();
+</script>
+</body>
+</html>
