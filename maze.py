@@ -1,6 +1,4 @@
-"""
 maze.py
---------
 Defines a small grid maze and a classical BFS solver.
 
 The maze is a square grid of size N x N (N is a power of 2, so each
@@ -11,7 +9,7 @@ Walls are edges between adjacent cells that cannot be crossed.
 The classical BFS is used only to compute which cells lie on a valid
 shortest path from START to EXIT -- this becomes the "marked states"
 that the quantum oracle amplifies with Grover's algorithm.
-"""
+
 
 import random
 from collections import deque
@@ -29,7 +27,7 @@ class Maze:
         self.walls = walls
         self.start = start
         self.exit = exit_
-        self.n_bits_per_axis = (size - 1).bit_length()  # qubits needed per axis
+        self.n_bits_per_axis = (size - 1).bit_length() 
 
     def in_bounds(self, r, c):
         return 0 <= r < self.size and 0 <= c < self.size
@@ -85,7 +83,7 @@ class Maze:
         """Return an ASCII rendering of the maze, optionally highlighting a path."""
         path_set = set(path) if path else set()
         lines = []
-        # top border
+       
         lines.append("+" + "---+" * self.size)
         for r in range(self.size):
             row_line = "|"
@@ -101,13 +99,13 @@ class Maze:
                 else:
                     ch = "   "
                 row_line += ch
-                # right wall
+              
                 right = (r, c + 1)
                 if self.in_bounds(*right) and not self.is_wall(cell, right):
                     row_line += " "
                 else:
                     row_line += "|"
-                # bottom wall
+               
                 below = (r + 1, c)
                 if self.in_bounds(*below) and not self.is_wall(cell, below):
                     wall_line += "   +"
@@ -133,7 +131,7 @@ def generate_maze(size=8, seed=42, start=(0, 0), exit_=None):
 
     rng = random.Random(seed)
     visited = {start}
-    open_edges = set()  # edges that are NOT walls (i.e. passable)
+    open_edges = set()  
     stack = [start]
 
     def unvisited_neighbors(cell):
@@ -154,7 +152,7 @@ def generate_maze(size=8, seed=42, start=(0, 0), exit_=None):
         else:
             stack.pop()
 
-    # walls = every adjacent edge that is NOT in open_edges
+  
     all_edges = set()
     for r in range(size):
         for c in range(size):
