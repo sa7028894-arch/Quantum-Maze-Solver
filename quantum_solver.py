@@ -1,11 +1,9 @@
-"""
 quantum_solver.py
-------------------
 Implements Grover's search algorithm (via Qiskit) to solve the "find the
 valid path cells in the maze" problem.
 
 Approach
---------
+
 Every cell of the NxN maze is encoded as a basis state of n = 2*log2(N)
 qubits (row bits followed by column bits). The classical BFS solution
 (maze.bfs_shortest_path) tells us which cells are "marked" -- i.e. lie
@@ -21,7 +19,7 @@ Measuring the resulting state amplifies the probability of the marked
 (path) cells far above the 1/N_total baseline of unstructured classical
 random guessing -- this is the quantum speedup Grover's algorithm
 provides for unstructured search problems.
-"""
+
 
 import math
 from qiskit import QuantumCircuit, transpile
@@ -35,22 +33,21 @@ def build_oracle(n_qubits, marked_bitstrings):
     phase (multiplying its amplitude by -1)."""
     qc = QuantumCircuit(n_qubits, name="Oracle")
     for bitstring in marked_bitstrings:
-        # Qiskit's qubit order is little-endian relative to the bitstring
-        # (rightmost char = qubit 0), so reverse for indexing convenience.
+       
         bits = bitstring[::-1]
         zero_positions = [i for i, b in enumerate(bits) if b == "0"]
 
-        # Flip qubits that should be 0 so the target pattern becomes all-1s
+        
         for i in zero_positions:
             qc.x(i)
 
-        # Multi-controlled Z: flips phase only when all qubits are |1>
+       
         if n_qubits == 1:
             qc.z(0)
         else:
             qc.append(MCMTGate(ZGate(), n_qubits - 1, 1), list(range(n_qubits)))
 
-        # Undo the X flips
+      
         for i in zero_positions:
             qc.x(i)
         qc.barrier()
@@ -111,7 +108,7 @@ def run_grover_search(n_qubits, marked_bitstrings, shots=2048, iterations=None):
     diffuser = build_diffuser(n_qubits)
 
     qc = QuantumCircuit(n_qubits, n_qubits)
-    qc.h(range(n_qubits))  # uniform superposition over all maze cells
+    qc.h(range(n_qubits)) 
     for _ in range(iterations):
         qc.append(oracle.to_instruction(), range(n_qubits))
         qc.append(diffuser.to_instruction(), range(n_qubits))
