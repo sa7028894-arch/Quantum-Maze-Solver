@@ -1,7 +1,5 @@
-#!/usr/bin/env python3
-"""
 app.py
--------
+
 Flask backend for the Quantum Maze Solver web app.
 
 Two API endpoints:
@@ -24,7 +22,7 @@ from quantum_solver import run_grover_search, run_grover_progressive, optimal_it
 
 app = Flask(__name__, static_folder="static", static_url_path="")
 
-MAX_QUBITS = 8  # cap search space (size<=16 => 8 qubits => 256 states) to keep response times reasonable
+MAX_QUBITS = 8 
 
 
 def maze_to_json(maze, path):
@@ -77,11 +75,11 @@ def api_grover():
 
     iters = optimal_iterations(n_total, 1)
 
-    # Round-by-round progression (real Qiskit circuits, one per round count)
+   
     progressive_shots = max(256, shots // 4)
     progression = run_grover_progressive(n_qubits, [exit_bits], shots=progressive_shots, max_iterations=iters)
 
-    # Final, full-shot run for the histogram
+    
     counts, circuit, iters_used = run_grover_search(n_qubits, [exit_bits], shots=shots, iterations=iters)
     marked_total = counts.get(exit_bits, 0)
     final_prob = 100 * marked_total / shots
