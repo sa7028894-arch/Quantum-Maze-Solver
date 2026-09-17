@@ -12,7 +12,7 @@ Two API endpoints:
 The frontend (static/index.html) calls these endpoints and renders the
 results -- all quantum computation happens here on the server via Qiskit,
 not in client-side JavaScript.
-"""
+
 
 import os
 from flask import Flask, jsonify, request, send_from_directory
