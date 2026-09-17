@@ -69,7 +69,7 @@ def build_diffuser(n_qubits):
 
 
 def run_grover_progressive(n_qubits, marked_bitstrings, shots=1024, max_iterations=None):
-    """
+    
     Runs Grover's algorithm separately for iteration counts 0, 1, 2, ...
     up to max_iterations, returning the probability of measuring a marked
     state at each step. This lets a live demo show the amplitude
@@ -77,7 +77,7 @@ def run_grover_progressive(n_qubits, marked_bitstrings, shots=1024, max_iteratio
     result.
 
     Returns: list of (iteration_count, probability_percent) tuples.
-    """
+    
     n_total = 2 ** n_qubits
     if max_iterations is None:
         max_iterations = optimal_iterations(n_total, len(marked_bitstrings))
